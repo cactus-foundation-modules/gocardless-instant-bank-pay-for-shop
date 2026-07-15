@@ -1,0 +1,33 @@
+{
+  "name": "gocardless-instant-bank-pay-for-shop",
+  "version": "0.1.0",
+  "tablePrefix": "gcp_",
+  "description": "GoCardless Instant Bank Pay for the Shop: one-off open-banking (pay-by-bank) checkout payments, with refunds and webhook confirmation.",
+  "requiresCoreVersion": "0.5.436",
+  "requiresModules": [
+    { "name": "shop", "minVersion": "0.1.28" }
+  ],
+  "requiredEnvVars": [
+    { "name": "GOCARDLESS_ACCESS_TOKEN", "required": false },
+    { "name": "GOCARDLESS_WEBHOOK_SECRET", "required": false },
+    { "name": "GOCARDLESS_ENVIRONMENT", "required": false }
+  ],
+  "permissions": [],
+  "settingsTabs": [
+    { "id": "gocardless-ibp", "label": "Instant Bank Pay", "permission": "shop.manage", "import": "./components/admin/SettingsTab", "component": "GoCardlessSettingsTab" }
+  ],
+  "extensionPoints": [
+    { "point": "shop.payment-providers", "id": "gocardless-ibp", "import": "./lib/provider", "component": "gocardlessIbpProvider" }
+  ],
+  "teardown": [
+    "gcp_payments",
+    "gcp_settings"
+  ],
+  "cookieCategories": [],
+  "cronJobs": [],
+  "memberExtensions": {
+    "activityTypes": [],
+    "notificationCategories": [],
+    "routeTiers": []
+  }
+}
