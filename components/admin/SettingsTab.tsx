@@ -1,9 +1,11 @@
 'use client'
 
-// "Instant Bank Pay" tab on the core admin settings page (settingsTabs manifest
-// entry). Credentials are stored as environment variables through the
-// core-managed /api/admin/env route (declared via requiredEnvVars); the on/off
-// toggle and payment description are this module's own settings.
+// "Instant Bank Pay" panel. The manifest settingsTabs entry sets host
+// "shop.payments", so this renders inside admin > Shop > Payments alongside
+// Stripe and PayPal rather than as a top-level Settings tab. Credentials are
+// stored as environment variables through the core-managed /api/admin/env route
+// (declared via requiredEnvVars); the on/off toggle and payment description are
+// this module's own settings.
 import { useEffect, useState } from 'react'
 
 const ENV_KEYS = [
