@@ -124,7 +124,19 @@ export function GoCardlessSettingsTab() {
           Let shoppers pay straight from their bank account with GoCardless, no card needed. Add
           your GoCardless access token and webhook secret, choose the environment, then turn the
           method on below. Sandbox and live use different tokens, so switching environment means
-          updating the token to match.
+          updating the token to match. Grab both from the{' '}
+          <a
+            href={
+              environment === 'live'
+                ? 'https://manage.gocardless.com/developers'
+                : 'https://manage-sandbox.gocardless.com/developers'
+            }
+            target="_blank"
+            rel="noreferrer"
+          >
+            GoCardless developer dashboard
+          </a>
+          .
         </p>
 
         {connError && <div className="alert alert-danger">{connError}</div>}

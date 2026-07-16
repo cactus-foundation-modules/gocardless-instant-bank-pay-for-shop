@@ -1,6 +1,6 @@
 {
   "name": "gocardless-instant-bank-pay-for-shop",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "tablePrefix": "gcp_",
   "description": "GoCardless Instant Bank Pay for the Shop: one-off open-banking (pay-by-bank) checkout payments, with refunds and webhook confirmation.",
   "requiresCoreVersion": "0.5.444",
