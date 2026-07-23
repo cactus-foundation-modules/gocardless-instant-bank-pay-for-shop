@@ -125,6 +125,13 @@ export function isPaymentFailed(status: string): boolean {
   return status === 'failed' || status === 'cancelled' || status === 'charged_back'
 }
 
+// A chargeback reverses money that was already collected, so it needs to reach a
+// PAID order (unlike an ordinary pre-settlement failure). The shop side maps this
+// to a refunded/reversed state rather than a plain FAILED one.
+export function isPaymentChargedBack(status: string): boolean {
+  return status === 'charged_back'
+}
+
 export async function getPayment(id: string): Promise<GcPayment> {
   const data = await gcFetch<{ payments: { id: string; status: string; amount: number; currency: string; amount_refunded?: number } }>(
     `/payments/${encodeURIComponent(id)}`

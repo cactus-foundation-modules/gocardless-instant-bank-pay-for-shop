@@ -3,7 +3,7 @@
 // shop order to its final state exactly once.
 import { markOrderPaid, markOrderPaymentFailed, setOrderPaymentReference } from '@/modules/shop/lib/db/orders'
 import { fulfillPaidOrder } from '@/modules/shop/lib/order-fulfillment'
-import { isPaymentCollected, isPaymentFailed, type GcPayment } from '@/modules/gocardless-instant-bank-pay-for-shop/lib/gocardless'
+import { isPaymentChargedBack, isPaymentCollected, isPaymentFailed, type GcPayment } from '@/modules/gocardless-instant-bank-pay-for-shop/lib/gocardless'
 import { updateGcpPayment, type GcpPayment } from '@/modules/gocardless-instant-bank-pay-for-shop/lib/db'
 
 export async function settleFromPayment(row: GcpPayment, payment: GcPayment): Promise<void> {
@@ -16,6 +16,12 @@ export async function settleFromPayment(row: GcpPayment, payment: GcPayment): Pr
     const justPaid = await markOrderPaid(row.orderId, payment.id)
     if (justPaid) await fulfillPaidOrder(row.orderId)
   } else if (isPaymentFailed(payment.status)) {
-    await markOrderPaymentFailed(row.orderId)
+    // Route both pre-settlement failures and post-settlement chargebacks through
+    // the shop's status update. A chargeback (or a late `failed`) can land after
+    // the order is already PAID, so we never skip on a PAID order - we pass the
+    // reason and let the shop side transition PAID -> a visible reversed state
+    // rather than silently dropping it (a plain FAILED handles the PENDING case).
+    const reason = isPaymentChargedBack(payment.status) ? 'CHARGEBACK' : 'FAILED'
+    await markOrderPaymentFailed(row.orderId, reason)
   }
 }

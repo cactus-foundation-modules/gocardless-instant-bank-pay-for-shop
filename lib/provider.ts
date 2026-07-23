@@ -82,14 +82,30 @@ async function confirmPayment(order: ShpOrderDraft): Promise<ShpPaymentResult> {
 async function refundOrder(refund: ShpRefundRequest): Promise<ShpRefundResult> {
   try {
     if (!refund.providerReference) return { success: false, error: 'No GoCardless payment reference to refund against.' }
+    const payment = await gc.getPayment(refund.providerReference)
+
+    // Re-validate against what was actually captured before issuing (never trust
+    // the request alone): a currency mismatch or an over-refund is rejected here
+    // rather than handed to GoCardless.
+    if (refund.currency.toUpperCase() !== payment.currency.toUpperCase()) {
+      return { success: false, error: 'Refund currency does not match the original payment.' }
+    }
+    const amountPence = toPence(refund.amount)
+    if (amountPence <= 0) return { success: false, error: 'Refund amount must be greater than zero.' }
+    const refundablePence = payment.amount - payment.amountRefunded
+    if (amountPence > refundablePence) {
+      return { success: false, error: 'Refund amount exceeds the amount still refundable on this payment.' }
+    }
+
     // total_amount_confirmation must equal all confirmed refunds for the payment
     // (existing + this one), so derive it from the payment's own amount_refunded.
-    const payment = await gc.getPayment(refund.providerReference)
-    const amountPence = toPence(refund.amount)
+    // The idempotency key (a deterministic key supplied by the shop refund route)
+    // stops a retried/double refund executing twice on GoCardless.
     const result = await gc.createRefund({
       paymentId: refund.providerReference,
       amount: amountPence,
       totalAmountConfirmation: payment.amountRefunded + amountPence,
+      idempotencyKey: refund.idempotencyKey,
     })
     return { success: true, providerRefundId: result.id }
   } catch (err) {
