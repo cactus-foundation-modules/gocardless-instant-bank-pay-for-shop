@@ -72,6 +72,14 @@ export async function createBillingRequest(input: {
   return mapBillingRequest(data.billing_requests)
 }
 
+// A billing request sits at `pending` until the shopper has actually authorised
+// it in their bank; everything past that is money genuinely on its way, even in
+// the gap before the payment resource exists. Worth the distinction because the
+// absence of a payment id on its own says nothing about which of the two it is.
+export function isBillingRequestAuthorised(status: string): boolean {
+  return status === 'ready_to_fulfil' || status === 'fulfilling' || status === 'fulfilled'
+}
+
 export async function getBillingRequest(id: string): Promise<GcBillingRequest> {
   const data = await gcFetch<{ billing_requests: { id: string; status: string; links?: { payment_request_payment?: string } } }>(
     `/billing_requests/${encodeURIComponent(id)}`

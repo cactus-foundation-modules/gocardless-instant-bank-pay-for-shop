@@ -66,7 +66,15 @@ async function confirmPayment(order: ShpOrderDraft): Promise<ShpPaymentResult> {
 
   const billingRequest = await gc.getBillingRequest(row.billingRequestId)
   if (!billingRequest.paymentId) {
-    // Not authorised/fulfilled yet - the webhook will confirm it.
+    // No payment resource yet means one of two very different things, and they
+    // must not share an answer. Authorised, with GoCardless still to create the
+    // payment: fine, report it pending and let the webhook finish the job.
+    // Never authorised at all: nothing is on its way, so reporting success here
+    // would park the order as "awaiting confirmation" and send the shopper to
+    // the confirmation page without a penny having left their account.
+    if (!gc.isBillingRequestAuthorised(billingRequest.status)) {
+      return { success: false, error: 'This payment has not been authorised with your bank yet.' }
+    }
     return { success: true, pending: true, providerReference: row.billingRequestId }
   }
 
