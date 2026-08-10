@@ -120,7 +120,7 @@ export function GoCardlessSettingsTab() {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
       <div className="card">
         <h2 className="card-title">Instant Bank Pay</h2>
-        <p style={{ color: 'var(--color-text-muted)', fontSize: 'var(--text-sm)', margin: '0 0 var(--space-4)' }}>
+        <p style={{ color: 'var(--color-text-secondary)', fontSize: 'var(--text-sm)', margin: '0 0 var(--space-4)' }}>
           Let shoppers pay straight from their bank account with GoCardless, no card needed. Add
           your GoCardless access token and webhook secret, choose the environment, then turn the
           method on below. Sandbox and live use different tokens, so switching environment means
@@ -181,7 +181,7 @@ export function GoCardlessSettingsTab() {
                 <label htmlFor={`gcp-${key}`}>
                   {label}
                   {setVars[key] && (
-                    <span style={{ marginLeft: 'var(--space-2)', fontSize: 'var(--text-xs)', color: 'var(--color-success, var(--color-text-muted))' }}>
+                    <span style={{ marginLeft: 'var(--space-2)', fontSize: 'var(--text-xs)', color: 'var(--color-success, var(--color-text-secondary))' }}>
                       (set)
                     </span>
                   )}
@@ -205,7 +205,7 @@ export function GoCardlessSettingsTab() {
 
         <div className="field" style={{ marginTop: 'var(--space-4)' }}>
           <label htmlFor="gcp-webhook-url">Webhook URL</label>
-          <p style={{ color: 'var(--color-text-muted)', fontSize: 'var(--text-sm)', margin: '0 0 var(--space-2)' }}>
+          <p style={{ color: 'var(--color-text-secondary)', fontSize: 'var(--text-sm)', margin: '0 0 var(--space-2)' }}>
             Add this as a webhook endpoint in your GoCardless dashboard so payments are confirmed
             automatically.
           </p>
@@ -215,7 +215,7 @@ export function GoCardlessSettingsTab() {
 
       <div className="card">
         <h2 className="card-title">Payment method</h2>
-        <p style={{ color: 'var(--color-text-muted)', fontSize: 'var(--text-sm)', margin: '0 0 var(--space-4)' }}>
+        <p style={{ color: 'var(--color-text-secondary)', fontSize: 'var(--text-sm)', margin: '0 0 var(--space-4)' }}>
           When switched on, Instant Bank Pay appears as a payment option at checkout (as long as the
           connection above is working).
         </p>
@@ -237,7 +237,7 @@ export function GoCardlessSettingsTab() {
 
             <div className="field">
               <label htmlFor="gcp-description">Payment description</label>
-              <p style={{ color: 'var(--color-text-muted)', fontSize: 'var(--text-sm)', margin: '0 0 var(--space-2)' }}>
+              <p style={{ color: 'var(--color-text-secondary)', fontSize: 'var(--text-sm)', margin: '0 0 var(--space-2)' }}>
                 Shown to the shopper when they authorise the payment. The order number is added
                 automatically. Leave blank to just use the order number.
               </p>
