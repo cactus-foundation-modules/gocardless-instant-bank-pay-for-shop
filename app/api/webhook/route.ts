@@ -66,14 +66,26 @@ export async function POST(request: NextRequest) {
   }
 
   const events = Array.isArray(parsed.events) ? parsed.events : []
+  // One poison event must not fail the whole batch, because GoCardless would
+  // retry the lot and every handler here is idempotent - so each is caught.
+  //
+  // But a batch that failed must still be RETRIED. This used to swallow the
+  // error and answer 200, which tells GoCardless the batch was dealt with: a
+  // transient database blip while settling was the last anyone heard of that
+  // payment, and the order sat AWAITING_CONFIRMATION for ever with the
+  // shopper's money gone. So failures are remembered and the response is a 500,
+  // which is what the Square webhook next door already did.
+  let failed = 0
   for (const event of events) {
-    // One poison event must not fail the whole batch (GoCardless would retry the
-    // lot); each is idempotent, so swallow and carry on.
     try {
       await handleEvent(event)
     } catch (err) {
+      failed++
       console.error('[gocardless-ibp] webhook event failed', err)
     }
+  }
+  if (failed > 0) {
+    return new NextResponse(`${failed} event(s) failed`, { status: 500 })
   }
 
   return NextResponse.json({ ok: true })
