@@ -14,7 +14,8 @@ Built on GoCardless's [Billing Requests API](https://developer.gocardless.com/bi
 
 1. At checkout the shopper picks *Instant Bank Pay*. The module creates a
    GoCardless billing request and a billing request flow, then redirects the
-   shopper to their bank to authorise.
+   shopper to their bank to authorise. The email address and name already given
+   at checkout are prefilled on the GoCardless page, and remain editable there.
 2. On return, and via GoCardless webhooks, the order is confirmed: it stays at
    *Awaiting confirmation* until the payment settles, then flips to *Paid* and
    the usual order fulfilment (email, stock, downloads) runs.

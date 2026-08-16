@@ -91,12 +91,27 @@ export async function getBillingRequest(id: string): Promise<GcBillingRequest> {
 
 export type GcBillingRequestFlow = { id: string; authorisationUrl: string }
 
+// What the hosted page's "your details" step is filled in with before the
+// shopper sees it. Everything here stays editable on the page - the details are
+// a head start, not a lock (locking them would be `lock_customer_details`, which
+// this module deliberately does not send: the shopper may well want to pay from
+// an account in another name).
+export type GcPrefilledCustomer = {
+  email?: string
+  given_name?: string
+  family_name?: string
+}
+
 export async function createBillingRequestFlow(input: {
   billingRequestId: string
   redirectUri: string
   exitUri: string
+  prefilledCustomer?: GcPrefilledCustomer
   idempotencyKey?: string
 }): Promise<GcBillingRequestFlow> {
+  const prefilled = input.prefilledCustomer
+  const hasPrefill = !!prefilled && Object.values(prefilled).some((v) => !!v)
+
   const data = await gcFetch<{ billing_request_flows: { id: string; authorisation_url: string } }>(
     '/billing_request_flows',
     {
@@ -106,6 +121,7 @@ export async function createBillingRequestFlow(input: {
         billing_request_flows: {
           redirect_uri: input.redirectUri,
           exit_uri: input.exitUri,
+          ...(hasPrefill ? { prefilled_customer: prefilled } : {}),
           links: { billing_request: input.billingRequestId },
         },
       },
