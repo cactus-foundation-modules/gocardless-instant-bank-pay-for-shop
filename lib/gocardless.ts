@@ -47,10 +47,25 @@ function mapBillingRequest(raw: { id: string; status: string; links?: { payment_
   return { id: raw.id, status: raw.status, paymentId: raw.links?.payment_request_payment ?? null }
 }
 
+// The scheme the money is asked for on. Left to GoCardless, the hosted page is
+// free to offer the account's other payment options - which is how a shopper who
+// picked "Instant Bank Pay" ended up being offered a card. Naming the scheme
+// pins the request to a bank-to-bank transfer and nothing else. A currency with
+// no open-banking scheme of its own is left unset rather than guessed at, since
+// an invalid scheme would fail the request outright.
+export function instantBankSchemeFor(currency: string): string | null {
+  switch (currency.toUpperCase()) {
+    case 'GBP': return 'faster_payments'
+    case 'EUR': return 'sepa_credit_transfer'
+    default: return null
+  }
+}
+
 export async function createBillingRequest(input: {
   amount: number // pence
   currency: string
   description: string
+  scheme?: string | null
   idempotencyKey?: string
 }): Promise<GcBillingRequest> {
   const data = await gcFetch<{ billing_requests: { id: string; status: string; links?: { payment_request_payment?: string } } }>(
@@ -64,6 +79,7 @@ export async function createBillingRequest(input: {
             description: input.description,
             amount: String(input.amount),
             currency: input.currency,
+            ...(input.scheme ? { scheme: input.scheme } : {}),
           },
         },
       },

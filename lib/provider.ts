@@ -43,6 +43,9 @@ async function createIntent(order: ShpOrderDraft): Promise<ShpPaymentIntent> {
     amount: toPence(order.amount),
     currency: order.currency.toUpperCase(),
     description,
+    // This method is bank transfer, and only bank transfer. See the note on
+    // instantBankSchemeFor for what an unnamed scheme lets the hosted page do.
+    scheme: gc.instantBankSchemeFor(order.currency),
     idempotencyKey: `gcp-br-${order.orderId}`,
   })
 
