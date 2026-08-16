@@ -8,6 +8,7 @@ import { isGoCardlessConfigured } from '@/modules/gocardless-instant-bank-pay-fo
 import { getGoCardlessSettings } from '@/modules/gocardless-instant-bank-pay-for-shop/lib/settings'
 import * as gc from '@/modules/gocardless-instant-bank-pay-for-shop/lib/gocardless'
 import { createGcpPayment, getGcpPaymentByOrderId, updateGcpPayment } from '@/modules/gocardless-instant-bank-pay-for-shop/lib/db'
+import { gocardlessLogo } from '@/modules/gocardless-instant-bank-pay-for-shop/lib/logo'
 
 const METHOD_ID = 'GOCARDLESS_IBP'
 const RETURN_PATH = '/api/m/gocardless-instant-bank-pay-for-shop/return'
@@ -139,6 +140,7 @@ async function refundOrder(refund: ShpRefundRequest): Promise<ShpRefundResult> {
 export const gocardlessIbpProvider: ShpPaymentProvider = {
   id: METHOD_ID,
   label: 'Instant Bank Pay',
+  logo: gocardlessLogo,
   confirmMode: 'auto',
   isAvailable,
   createIntent,
