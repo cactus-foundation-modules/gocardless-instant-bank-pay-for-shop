@@ -143,6 +143,7 @@ async function refundOrder(refund: ShpRefundRequest): Promise<ShpRefundResult> {
 export const gocardlessIbpProvider: ShpPaymentProvider = {
   id: METHOD_ID,
   label: 'Instant Bank Pay',
+  description: 'Instant bank transfers are securely handled by our payment partner GoCardless.',
   logo: gocardlessLogo,
   confirmMode: 'auto',
   isAvailable,
