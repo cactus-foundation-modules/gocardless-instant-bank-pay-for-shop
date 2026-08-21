@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="module-art.webp" alt="GoCardless Instant Bank Pay for Shop" width="640" />
+</p>
+
 # GoCardless Instant Bank Pay for Shop
 
 Adds **Instant Bank Pay** as a checkout payment method in the Cactus Shop:
