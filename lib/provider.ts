@@ -146,6 +146,12 @@ export const gocardlessIbpProvider: ShpPaymentProvider = {
   description: 'Instant bank transfers are securely handled by our payment partner GoCardless.',
   logo: gocardlessLogo,
   confirmMode: 'auto',
+  // The shopper authorises this at their own bank, on a page this site never
+  // sees, and most of the people who go there do not come back. An order written
+  // before they left would be an order nobody had paid for, sitting in the
+  // owner's list looking exactly like one somebody had - so the checkout drafts
+  // it instead and settle.ts creates it the moment the money is committed.
+  orderCreation: 'on-payment',
   isAvailable,
   createIntent,
   confirmPayment,
