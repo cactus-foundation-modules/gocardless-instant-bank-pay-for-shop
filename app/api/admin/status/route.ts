@@ -3,7 +3,7 @@
 import { NextResponse } from 'next/server'
 import { requireShopUser } from '@/modules/shop/lib/access'
 import { isGoCardlessConfigured, getGoCardlessEnvironment } from '@/modules/gocardless-instant-bank-pay-for-shop/lib/env'
-import { verifyCredentials } from '@/modules/gocardless-instant-bank-pay-for-shop/lib/gocardless'
+import { checkBankSelectionSupport, verifyCredentials } from '@/modules/gocardless-instant-bank-pay-for-shop/lib/gocardless'
 
 export async function GET() {
   const gate = await requireShopUser('shop.manage')
@@ -15,7 +15,11 @@ export async function GET() {
 
   try {
     await verifyCredentials()
-    return NextResponse.json({ configured: true, connected: true, environment: getGoCardlessEnvironment() })
+    // Asked alongside the credential check rather than on its own, because the
+    // two answers are read together: an owner looking at this card wants to know
+    // both that GoCardless is talking to them and what it will let them do.
+    const bankSelection = await checkBankSelectionSupport()
+    return NextResponse.json({ configured: true, connected: true, environment: getGoCardlessEnvironment(), bankSelection })
   } catch (err) {
     return NextResponse.json({
       configured: true,

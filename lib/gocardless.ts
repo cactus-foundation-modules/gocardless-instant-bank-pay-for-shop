@@ -158,6 +158,49 @@ export async function createBillingRequestFlow(input: {
 // always theirs. What this buys is the two steps before it - who is paying, and
 // which bank they are paying from - happening on the shop's own checkout.
 
+// Whether GoCardless will let this account pick the bank from our own pages.
+//
+// Bank selection needs the "custom payment pages" upgrade on the account, and
+// an account without it is refused with 403 on both the institutions listing
+// and the select_institution action. There is no endpoint that reports the
+// upgrade, so this asks the gated endpoint itself using a billing request id
+// that cannot exist. Nothing is created and nothing is changed: the id resolves
+// to nothing, so the only question the answer settles is whether we were
+// allowed to ask.
+//
+//   403 - the account does not have the upgrade (refused before the id is read)
+//   404 - the account has it; only the made-up id was wrong
+//
+// Anything else is reported as unknown rather than guessed at, because telling
+// a shop owner their account is fine when it is not would send them looking for
+// the fault in the wrong place entirely.
+export type GcBankSelectionSupport = 'available' | 'not-enabled' | 'unknown'
+
+const IMPOSSIBLE_BILLING_REQUEST_ID = 'BRQ0000000000000'
+
+export async function checkBankSelectionSupport(): Promise<GcBankSelectionSupport> {
+  const token = getGoCardlessAccessToken()
+  if (!token) return 'unknown'
+  try {
+    const res = await fetch(
+      `${getGoCardlessApiBase()}/billing_requests/${IMPOSSIBLE_BILLING_REQUEST_ID}/institutions?country_code=GB`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'GoCardless-Version': GC_VERSION,
+          Accept: 'application/json',
+        },
+        signal: AbortSignal.timeout(20_000),
+      }
+    )
+    if (res.status === 403) return 'not-enabled'
+    if (res.status === 404) return 'available'
+    return 'unknown'
+  } catch {
+    return 'unknown'
+  }
+}
+
 // A bank the shopper can pay from. `iconUrl` is the square mark meant for a
 // list; `logoUrl` is the wide one. Both are absolute URLs on GoCardless's own
 // CDN, so they are rendered as plain images rather than optimised - there is

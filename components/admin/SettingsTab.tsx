@@ -13,12 +13,17 @@ const ENV_KEYS = [
   { key: 'GOCARDLESS_WEBHOOK_SECRET', label: 'Webhook secret', placeholder: '••••••••', secret: true },
 ] as const
 
+// `bankSelection` answers "will GoCardless let this account pick the bank from
+// our own pages?" - see checkBankSelectionSupport. Optional so a response from
+// an older deployment still parses.
+type BankSelectionSupport = 'available' | 'not-enabled' | 'unknown'
+
 type Status =
   | { configured: false; environment: string }
-  | { configured: true; connected: true; environment: string }
+  | { configured: true; connected: true; environment: string; bankSelection?: BankSelectionSupport }
   | { configured: true; connected: false; environment: string; error?: string }
 
-type Settings = { enabled: boolean; paymentDescription: string }
+type Settings = { enabled: boolean; paymentDescription: string; bankSelectionEnabled: boolean }
 
 export function GoCardlessSettingsTab() {
   const [setVars, setSetVars] = useState<Record<string, boolean>>({})
@@ -234,6 +239,51 @@ export function GoCardlessSettingsTab() {
               />
               Offer Instant Bank Pay at checkout
             </label>
+
+            <label style={{ display: 'flex', alignItems: 'flex-start', gap: 'var(--space-2)', margin: '0 0 var(--space-2)', color: 'var(--color-text)' }}>
+              <input
+                type="checkbox"
+                checked={settings.bankSelectionEnabled}
+                disabled={savingSettings}
+                onChange={(e) => saveSettings({ ...settings, bankSelectionEnabled: e.target.checked })}
+                style={{ marginTop: '0.2rem' }}
+              />
+              <span>
+                Let shoppers choose their bank on your checkout
+                <span style={{ display: 'block', color: 'var(--color-text-secondary)', fontSize: 'var(--text-sm)' }}>
+                  Off: the shopper picks their bank on GoCardless&apos;s page, as they always have.
+                  On: the bank list appears on your own checkout and placing the order takes them
+                  straight to their bank. Either way the payment is approved at the bank itself -
+                  that part is the bank&apos;s job and cannot happen anywhere else.
+                </span>
+              </span>
+            </label>
+
+            {/* Said whether or not the box is ticked. An owner deciding whether to
+                tick it needs to know it depends on something they cannot do from
+                here; an owner who has ticked it and sees no list needs to know why.
+                Both are the same sentence, so it is simply always on screen. */}
+            <div className="alert alert-warning" style={{ margin: '0 0 var(--space-4)' }}>
+              <strong>GoCardless has to switch this on at their end too.</strong> It is an account
+              upgrade they grant on request - there is no setting for it in your GoCardless
+              dashboard, so the only way to get it is to ask them.{' '}
+              <a href="https://support.gocardless.com/hc/en-gb" target="_blank" rel="noreferrer">
+                Message GoCardless support
+              </a>{' '}
+              and ask them to enable <em>custom payment pages</em> on your account, quoting the
+              bank selection action. Until they do, ticking the box changes nothing a shopper can
+              see: the checkout quietly carries on sending them to GoCardless to choose.
+              {status?.configured && status.connected && status.bankSelection === 'not-enabled' && (
+                <div style={{ marginTop: 'var(--space-2)' }}>
+                  <strong>We checked, and it is not enabled on your account yet.</strong>
+                </div>
+              )}
+              {status?.configured && status.connected && status.bankSelection === 'available' && (
+                <div style={{ marginTop: 'var(--space-2)' }}>
+                  <strong>Good news - we checked, and your account already has it.</strong>
+                </div>
+              )}
+            </div>
 
             <div className="field">
               <label htmlFor="gcp-description">Payment description</label>

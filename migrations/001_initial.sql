@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS "gcp_settings" (
     "id" TEXT NOT NULL DEFAULT 'singleton',
     "enabled" BOOLEAN NOT NULL DEFAULT false,
     "payment_description" TEXT NOT NULL DEFAULT '',
+    "bank_selection_enabled" BOOLEAN NOT NULL DEFAULT false,
     "updated_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT "gcp_settings_pkey" PRIMARY KEY ("id"),
     CONSTRAINT "gcp_settings_singleton" CHECK ("id" = 'singleton')

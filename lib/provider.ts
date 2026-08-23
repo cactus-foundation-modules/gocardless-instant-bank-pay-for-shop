@@ -70,7 +70,12 @@ async function createIntent(order: ShpOrderDraft): Promise<ShpPaymentIntent> {
     // is already in the browser (the checkout was handed it with this intent),
     // and it is what the module's own routes look the billing request up by -
     // so the billing request id itself never leaves the server.
-    clientFields: { orderId: order.orderId },
+    //
+    // Left off entirely when the owner has not switched bank selection on, which
+    // is what stops the checkout drawing a picker at all: no clientFields, no
+    // fields mounted (see the shop's CheckoutPaymentClient), and "Place order"
+    // hands over exactly as it did before any of this existed.
+    ...(settings.bankSelectionEnabled ? { clientFields: { orderId: order.orderId } } : {}),
   }
 }
 

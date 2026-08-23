@@ -14,6 +14,7 @@ export async function GET() {
 const PatchBody = z.object({
   enabled: z.boolean().optional(),
   paymentDescription: z.string().max(100).optional(),
+  bankSelectionEnabled: z.boolean().optional(),
 })
 
 export async function PATCH(request: NextRequest) {
