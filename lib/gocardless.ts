@@ -146,6 +146,99 @@ export async function createBillingRequestFlow(input: {
   return { id: data.billing_request_flows.id, authorisationUrl: data.billing_request_flows.authorisation_url }
 }
 
+// --- Billing request actions & institutions --------------------------------
+//
+// The hosted GoCardless page walks the shopper through whatever actions are
+// still outstanding on a billing request. Complete them here, from this site,
+// and the hosted page has nothing left to ask - it goes straight to the bank.
+//
+// Not all of them can be done here, and deliberately so: creating the bank
+// authorisation itself is only permitted from a GoCardless-hosted page, because
+// that is where the regulated wording has to be shown. So the last hop is
+// always theirs. What this buys is the two steps before it - who is paying, and
+// which bank they are paying from - happening on the shop's own checkout.
+
+// A bank the shopper can pay from. `iconUrl` is the square mark meant for a
+// list; `logoUrl` is the wide one. Both are absolute URLs on GoCardless's own
+// CDN, so they are rendered as plain images rather than optimised - there is
+// nothing local to optimise.
+export type GcInstitution = {
+  id: string
+  name: string
+  iconUrl: string | null
+  logoUrl: string | null
+  countryCode: string | null
+}
+
+// The banks GoCardless will accept for THIS request, rather than every bank it
+// knows about: the list is scoped to the billing request so a scheme the request
+// cannot use never reaches the shopper as an option that then fails.
+export async function listInstitutions(billingRequestId: string, countryCode: string): Promise<GcInstitution[]> {
+  const data = await gcFetch<{ institutions: Array<{ id: string; name: string; icon_url?: string | null; logo_url?: string | null; country_code?: string | null }> }>(
+    `/billing_requests/${encodeURIComponent(billingRequestId)}/institutions?country_code=${encodeURIComponent(countryCode)}`
+  )
+  return (data.institutions ?? []).map((i) => ({
+    id: i.id,
+    name: i.name,
+    iconUrl: i.icon_url ?? null,
+    logoUrl: i.logo_url ?? null,
+    countryCode: i.country_code ?? null,
+  }))
+}
+
+// GoCardless wants a name in two halves; a checkout collects it as one line. A
+// name that does not split into two is left out entirely rather than guessed at,
+// since a half-filled name would only have to be corrected at the bank.
+export function splitCustomerName(fullName: string): { given_name?: string; family_name?: string } {
+  const parts = fullName.trim().split(/\s+/).filter(Boolean)
+  if (parts.length < 2) return {}
+  return { given_name: parts[0], family_name: parts.slice(1).join(' ') }
+}
+
+export type GcCustomerDetails = {
+  email: string
+  name: string
+  addressLine1: string
+  addressLine2?: string
+  city: string
+  region?: string
+  postalCode: string
+  countryCode: string
+}
+
+// Completes the request's `collect_customer_details` action - the "your details"
+// step of the hosted page - from what the checkout already asked for.
+export async function collectCustomerDetails(billingRequestId: string, details: GcCustomerDetails): Promise<void> {
+  await gcFetch(`/billing_requests/${encodeURIComponent(billingRequestId)}/actions/collect_customer_details`, {
+    method: 'POST',
+    body: {
+      data: {
+        customer: {
+          email: details.email,
+          ...splitCustomerName(details.name),
+        },
+        customer_billing_detail: {
+          address_line1: details.addressLine1,
+          ...(details.addressLine2 ? { address_line2: details.addressLine2 } : {}),
+          city: details.city,
+          ...(details.region ? { region: details.region } : {}),
+          postal_code: details.postalCode,
+          country_code: details.countryCode,
+        },
+      },
+    },
+  })
+}
+
+// Completes the request's `select_institution` action - the bank picker on the
+// hosted page - with the bank the shopper chose here instead.
+export async function selectInstitution(billingRequestId: string, institution: string, countryCode: string): Promise<void> {
+  await gcFetch(`/billing_requests/${encodeURIComponent(billingRequestId)}/actions/select_institution`, {
+    method: 'POST',
+    body: { data: { institution, country_code: countryCode } },
+  })
+}
+
 // --- Payments -------------------------------------------------------------
 
 export type GcPayment = {

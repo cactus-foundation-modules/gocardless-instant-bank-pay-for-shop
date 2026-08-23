@@ -1,23 +1,58 @@
 {
   "name": "gocardless-instant-bank-pay-for-shop",
-  "version": "0.1.13",
+  "version": "0.1.14",
   "tablePrefix": "gcp_",
   "description": "GoCardless Instant Bank Pay for the Shop: one-off open-banking (pay-by-bank) checkout payments, with refunds and webhook confirmation.",
   "requiresCoreVersion": "0.5.444",
   "requiresModules": [
-    { "name": "shop", "minVersion": "0.1.281" }
+    {
+      "name": "shop",
+      "minVersion": "0.1.300"
+    }
   ],
   "requiredEnvVars": [
-    { "name": "GOCARDLESS_ACCESS_TOKEN", "required": false },
-    { "name": "GOCARDLESS_WEBHOOK_SECRET", "required": false },
-    { "name": "GOCARDLESS_ENVIRONMENT", "required": false }
+    {
+      "name": "GOCARDLESS_ACCESS_TOKEN",
+      "required": false
+    },
+    {
+      "name": "GOCARDLESS_WEBHOOK_SECRET",
+      "required": false
+    },
+    {
+      "name": "GOCARDLESS_ENVIRONMENT",
+      "required": false
+    }
   ],
   "permissions": [],
   "settingsTabs": [
-    { "id": "gocardless-ibp", "label": "Instant Bank Pay", "permission": "shop.manage", "host": "shop.payments", "import": "./components/admin/SettingsTab", "component": "GoCardlessSettingsTab" }
+    {
+      "id": "gocardless-ibp",
+      "label": "Instant Bank Pay",
+      "permission": "shop.manage",
+      "host": "shop.payments",
+      "import": "./components/admin/SettingsTab",
+      "component": "GoCardlessSettingsTab"
+    }
   ],
+  "cspOrigins": {
+    "img": [
+      "https://*.gocardless.com"
+    ]
+  },
   "extensionPoints": [
-    { "point": "shop.payment-providers", "id": "gocardless-ibp", "import": "./lib/provider", "component": "gocardlessIbpProvider" }
+    {
+      "point": "shop.payment-providers",
+      "id": "gocardless-ibp",
+      "import": "./lib/provider",
+      "component": "gocardlessIbpProvider"
+    },
+    {
+      "point": "shop.checkout-payment-fields",
+      "id": "GOCARDLESS_IBP",
+      "import": "./components/public/CheckoutFields",
+      "component": "GoCardlessCheckoutFields"
+    }
   ],
   "teardown": [
     "gcp_payments",

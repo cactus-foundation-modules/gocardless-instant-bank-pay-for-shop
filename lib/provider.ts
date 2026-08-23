@@ -17,15 +17,6 @@ function toPence(amount: number): number {
   return Math.round(amount * 100)
 }
 
-// GoCardless wants the name in two halves; checkout collects it as one line. A
-// name that does not split into two is left out entirely rather than guessed at,
-// since a half-filled name would only have to be corrected on the bank page.
-function splitName(fullName: string): { given_name?: string; family_name?: string } {
-  const parts = fullName.trim().split(/\s+/).filter(Boolean)
-  if (parts.length < 2) return {}
-  return { given_name: parts[0], family_name: parts.slice(1).join(' ') }
-}
-
 // Offered at checkout only when the credentials are set AND the admin has turned
 // the method on in its settings tab.
 async function isAvailable(): Promise<boolean> {
@@ -58,7 +49,7 @@ async function createIntent(order: ShpOrderDraft): Promise<ShpPaymentIntent> {
     // filled in. Still editable there - see GcPrefilledCustomer.
     prefilledCustomer: {
       ...(order.customerEmail.trim() ? { email: order.customerEmail.trim() } : {}),
-      ...splitName(order.customerName),
+      ...gc.splitCustomerName(order.customerName),
     },
     idempotencyKey: `gcp-brf-${order.orderId}`,
   })
@@ -72,7 +63,15 @@ async function createIntent(order: ShpOrderDraft): Promise<ShpPaymentIntent> {
     currency: order.currency,
   })
 
-  return { approvalUrl: flow.authorisationUrl, providerOrderId: billingRequest.id }
+  return {
+    approvalUrl: flow.authorisationUrl,
+    providerOrderId: billingRequest.id,
+    // What the on-page bank picker needs, and nothing else. The draft order id
+    // is already in the browser (the checkout was handed it with this intent),
+    // and it is what the module's own routes look the billing request up by -
+    // so the billing request id itself never leaves the server.
+    clientFields: { orderId: order.orderId },
+  }
 }
 
 // Best-effort confirmation for the on-page confirm route. The redirect-return
