@@ -17,6 +17,18 @@ function toPence(amount: number): number {
   return Math.round(amount * 100)
 }
 
+// A path on this site, or nothing at all.
+//
+// The shop hands this over and the shop is trustworthy, but what is built from
+// it is a URL somebody's browser will be sent to - so it is checked here rather
+// than assumed, and checked for the shape that matters: one leading slash, and
+// no second one. "//evil.example" is a protocol-relative URL, and a browser
+// treats it as another site entirely.
+function safeReturnPath(path: string | undefined): string | null {
+  if (!path || !path.startsWith('/') || path.startsWith('//')) return null
+  return path
+}
+
 // Offered at checkout only when the credentials are set AND the admin has turned
 // the method on in its settings tab.
 async function isAvailable(): Promise<boolean> {
@@ -41,10 +53,15 @@ async function createIntent(order: ShpOrderDraft): Promise<ShpPaymentIntent> {
   })
 
   const siteUrl = getSiteUrl()
+  // Where the payer belongs afterwards. The checkout has no opinion and gets the
+  // default it always got; an order being settled from the customer's own order
+  // page says so, and that is where both the finished and the abandoned journey
+  // put them down. A same-site path only - see safeReturnPath.
+  const returnPath = safeReturnPath(order.returnPath)
   const flow = await gc.createBillingRequestFlow({
     billingRequestId: billingRequest.id,
     redirectUri: `${siteUrl}${RETURN_PATH}?order=${encodeURIComponent(order.orderId)}`,
-    exitUri: `${siteUrl}/shop/checkout`,
+    exitUri: `${siteUrl}${returnPath ?? '/shop/checkout'}`,
     // Checkout already asked for these, so the bank page arrives with them
     // filled in. Still editable there - see GcPrefilledCustomer.
     prefilledCustomer: {
@@ -61,6 +78,10 @@ async function createIntent(order: ShpOrderDraft): Promise<ShpPaymentIntent> {
     billingRequestFlowId: flow.id,
     amount: order.amount,
     currency: order.currency,
+    // Kept here rather than in the return URL: that URL comes back through the
+    // payer's own browser, so a destination read out of it is one anybody can
+    // write.
+    returnPath,
   })
 
   return {
@@ -156,6 +177,12 @@ export const gocardlessIbpProvider: ShpPaymentProvider = {
   // owner's list looking exactly like one somebody had - so the checkout drafts
   // it instead and settle.ts creates it the moment the money is committed.
   orderCreation: 'on-payment',
+  // Nothing here assumes a checkout. createIntent works off an order id and an
+  // amount, and every settlement path goes through materialiseDraftOrder, which
+  // hands back an order that already exists just as happily as it creates one -
+  // so a bank transfer that has gone unpaid can be settled from the customer's
+  // own order page.
+  settlesExistingOrder: true,
   isAvailable,
   createIntent,
   confirmPayment,

@@ -1,0 +1,17 @@
+-- Where to put the payer down once GoCardless sends them back.
+--
+-- Until now there was only one answer, so it did not need storing: everyone
+-- arrived here from the checkout and left for the thank-you page. A payment can
+-- now also be started against an order that was placed weeks ago - the shop
+-- offers it on the customer's own order page when a bank transfer has gone
+-- unpaid - and that person is not going to a thank-you page for an order they
+-- have long since had confirmed.
+--
+-- Stored rather than carried in the return URL, deliberately. The URL comes back
+-- through the payer's own browser, so a destination read out of it is a
+-- destination anybody can write, and "redirect wherever this parameter says" is
+-- a hole nobody needs to open for the sake of one path.
+--
+-- NULL means what it always meant: the shop's confirmation page. Idempotent,
+-- like every migration in this module.
+ALTER TABLE "gcp_payments" ADD COLUMN IF NOT EXISTS "return_path" TEXT;

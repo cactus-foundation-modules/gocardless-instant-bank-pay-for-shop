@@ -11,6 +11,10 @@ export type GcpPayment = {
   status: string
   amount: string
   currency: string
+  // Where to send the payer once GoCardless hands them back. NULL for a payment
+  // started at the checkout, which is the shop's confirmation page - see
+  // migration 003.
+  returnPath: string | null
 }
 
 function mapRow(r: Record<string, unknown>): GcpPayment {
@@ -24,6 +28,7 @@ function mapRow(r: Record<string, unknown>): GcpPayment {
     status: r.status as string,
     amount: (r.amount as { toString(): string }).toString(),
     currency: r.currency as string,
+    returnPath: (r.return_path as string | null) ?? null,
   }
 }
 
@@ -35,15 +40,16 @@ export async function createGcpPayment(input: {
   amount: number
   currency: string
   status?: string
+  returnPath?: string | null
 }): Promise<GcpPayment> {
   const id = randomUUID()
   await prisma.$executeRaw`
     INSERT INTO "gcp_payments" (
       "id", "order_id", "order_number", "billing_request_id", "billing_request_flow_id",
-      "status", "amount", "currency", "created_at", "updated_at"
+      "status", "amount", "currency", "return_path", "created_at", "updated_at"
     ) VALUES (
       ${id}, ${input.orderId}, ${input.orderNumber}, ${input.billingRequestId}, ${input.billingRequestFlowId},
-      ${input.status ?? 'PENDING'}, ${input.amount}, ${input.currency}, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+      ${input.status ?? 'PENDING'}, ${input.amount}, ${input.currency}, ${input.returnPath ?? null}, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
     )
   `
   const row = await getGcpPaymentById(id)

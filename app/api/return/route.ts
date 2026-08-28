@@ -25,6 +25,9 @@ export async function GET(request: NextRequest) {
 
   const row = await getGcpPaymentByOrderId(orderId)
   if (!row?.billingRequestId) return NextResponse.redirect(checkoutUrl)
+  // Where a journey that never got started belongs. Same answer as the finished
+  // one: back to the page the payment was begun on.
+  const abandonedUrl = row.returnPath ? `${siteUrl}${row.returnPath}` : checkoutUrl
 
   try {
     const billingRequest = await gc.getBillingRequest(row.billingRequestId)
@@ -50,7 +53,14 @@ export async function GET(request: NextRequest) {
   // Read after settling, never before: on this method the order is very often
   // brought into being by the lines above.
   const order = await getOrderById(orderId)
-  if (!order) return NextResponse.redirect(checkoutUrl)
+  if (!order) return NextResponse.redirect(abandonedUrl)
+
+  // A payment started somewhere other than the checkout goes back where it came
+  // from - the customer's own order page, for an unpaid bank transfer they have
+  // just settled. A thank-you page for an order confirmed a fortnight ago is not
+  // where that person was going. The path was stored when the payment was
+  // created, never read out of this URL: see migration 003.
+  if (row.returnPath) return NextResponse.redirect(`${siteUrl}${row.returnPath}`)
 
   // The signed receipt token, never the customer's email address. A redirect
   // URL lands in the site's access logs, the shopper's browser history and the
