@@ -9,6 +9,10 @@ CREATE TABLE IF NOT EXISTS "gcp_settings" (
     "enabled" BOOLEAN NOT NULL DEFAULT false,
     "payment_description" TEXT NOT NULL DEFAULT '',
     "bank_selection_enabled" BOOLEAN NOT NULL DEFAULT false,
+    -- What happened to the last webhook GoCardless sent - see migration 004.
+    "last_webhook_at" TIMESTAMP(3),
+    "last_webhook_ok" BOOLEAN,
+    "last_webhook_error" TEXT,
     "updated_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT "gcp_settings_pkey" PRIMARY KEY ("id"),
     CONSTRAINT "gcp_settings_singleton" CHECK ("id" = 'singleton')

@@ -7,6 +7,7 @@ import { getGoCardlessWebhookSecret } from '@/modules/gocardless-instant-bank-pa
 import * as gc from '@/modules/gocardless-instant-bank-pay-for-shop/lib/gocardless'
 import { getGcpPaymentByBillingRequestId, getGcpPaymentByPaymentId } from '@/modules/gocardless-instant-bank-pay-for-shop/lib/db'
 import { settleFromPayment } from '@/modules/gocardless-instant-bank-pay-for-shop/lib/settle'
+import { recordWebhookOutcome } from '@/modules/gocardless-instant-bank-pay-for-shop/lib/webhook-health'
 
 // GoCardless signs the raw body with HMAC-SHA256 using the webhook endpoint
 // secret and sends it hex-encoded in the Webhook-Signature header.
@@ -55,7 +56,29 @@ export async function POST(request: NextRequest) {
   const rawBody = await request.text()
   const signature = request.headers.get('webhook-signature') ?? ''
   if (!verifySignature(rawBody, signature, secret)) {
-    return new NextResponse('Invalid signature', { status: 403 })
+    // 498, not 403. GoCardless treats 498 as "signature I cannot match": it logs
+    // the delivery and stops. Every other non-2xx, 403 included, is a fault worth
+    // retrying, so a mismatched secret used to buy nine identical rejections per
+    // event instead of one - eight more chances to fail in exactly the same way.
+    //
+    // And the cause is almost never in this file. GoCardless checks nothing when
+    // an endpoint is added, so an endpoint whose secret is not the one saved in
+    // GOCARDLESS_WEBHOOK_SECRET is accepted by their dashboard, delivers happily,
+    // and is turned away here. Said plainly in the log, and remembered for the
+    // settings card, because otherwise the only trace of it is in GoCardless's
+    // own webhook log and the first anyone hears is an order stuck at "awaiting
+    // confirmation" with the shopper's money already gone.
+    console.error(
+      '[gocardless-ibp] webhook signature rejected - the secret on the endpoint in ' +
+      'your GoCardless dashboard does not match GOCARDLESS_WEBHOOK_SECRET',
+    )
+    await recordWebhookOutcome(
+      false,
+      'The last delivery was rejected: the secret on the webhook endpoint in your ' +
+      'GoCardless dashboard does not match the webhook secret saved here. Until they ' +
+      'match, payments will not confirm on their own.',
+    )
+    return new NextResponse('Invalid signature', { status: 498 })
   }
 
   let parsed: { events?: GcWebhookEvent[] }
@@ -85,8 +108,10 @@ export async function POST(request: NextRequest) {
     }
   }
   if (failed > 0) {
+    await recordWebhookOutcome(false, `${failed} of ${events.length} event(s) could not be processed. GoCardless will try again.`)
     return new NextResponse(`${failed} event(s) failed`, { status: 500 })
   }
 
+  await recordWebhookOutcome(true, null)
   return NextResponse.json({ ok: true })
 }

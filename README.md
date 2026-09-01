@@ -45,5 +45,12 @@ in the GoCardless dashboard pointing at:
 https://<your-site>/api/m/gocardless-instant-bank-pay-for-shop/webhook
 ```
 
+The secret you set on that endpoint in the GoCardless dashboard must be the same
+string as `GOCARDLESS_WEBHOOK_SECRET`. GoCardless does not check this when the
+endpoint is added, so a mismatch looks perfectly healthy from their side and is
+only rejected on delivery. The settings card reports how the last delivery went
+for exactly that reason - a rejected one means the two secrets differ, and until
+they match, payments will never confirm on their own.
+
 Sandbox and live use different access tokens, so switching `GOCARDLESS_ENVIRONMENT`
 means updating the token to match.

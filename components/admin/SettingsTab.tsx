@@ -18,10 +18,15 @@ const ENV_KEYS = [
 // an older deployment still parses.
 type BankSelectionSupport = 'available' | 'not-enabled' | 'unknown'
 
-type Status =
-  | { configured: false; environment: string }
-  | { configured: true; connected: true; environment: string; bankSelection?: BankSelectionSupport }
-  | { configured: true; connected: false; environment: string; error?: string }
+// How the last webhook delivery went. Optional so a response from an older
+// deployment still parses.
+type WebhookHealth = { lastAt: string | null; ok: boolean | null; error: string | null }
+
+type Status = (
+  | { configured: false }
+  | { configured: true; connected: true; bankSelection?: BankSelectionSupport }
+  | { configured: true; connected: false; error?: string }
+) & { environment: string; webhook?: WebhookHealth }
 
 type Settings = { enabled: boolean; paymentDescription: string; bankSelectionEnabled: boolean }
 
@@ -215,6 +220,31 @@ export function GoCardlessSettingsTab() {
             automatically.
           </p>
           <input id="gcp-webhook-url" type="text" value={webhookUrl} readOnly onFocus={(e) => e.target.select()} />
+
+          {/* The connection banner above only ever spoke for the access token.
+              This speaks for the webhook secret, which is the half that goes
+              wrong silently: GoCardless accepts an endpoint whatever secret you
+              give it, so the first sign of a mismatch is orders that never
+              confirm. */}
+          {status?.webhook && (
+            status.webhook.ok === false ? (
+              <div className="alert alert-danger" style={{ marginTop: 'var(--space-3)' }}>
+                <strong>GoCardless tried to reach this and was turned away.</strong>{' '}
+                {status.webhook.error ?? 'The last delivery was rejected.'}
+                {status.webhook.lastAt && ` (${new Date(status.webhook.lastAt).toLocaleString()})`}
+              </div>
+            ) : status.webhook.ok === true ? (
+              <div className="alert alert-success" style={{ marginTop: 'var(--space-3)' }}>
+                GoCardless last reached this successfully
+                {status.webhook.lastAt && ` on ${new Date(status.webhook.lastAt).toLocaleString()}`}.
+              </div>
+            ) : (
+              <div className="alert alert-warning" style={{ marginTop: 'var(--space-3)' }}>
+                Nothing has arrived here yet. Until GoCardless can reach this address, payments will
+                not confirm on their own and orders will sit awaiting confirmation.
+              </div>
+            )
+          )}
         </div>
       </div>
 
