@@ -8,7 +8,8 @@
 // Nothing here moves money, changes anything, or says anything about the order.
 // The worst a guessed id can do is list the same banks everyone else is offered.
 import { NextRequest, NextResponse } from 'next/server'
-import { checkInMemoryRateLimit, getClientIpFromRequest } from '@/modules/shop/lib/rate-limit'
+import { checkInMemoryRateLimit } from '@/modules/shop/lib/rate-limit'
+import { getClientIp } from '@/lib/auth/rate-limit'
 import { isGoCardlessConfigured } from '@/modules/gocardless-instant-bank-pay-for-shop/lib/env'
 import { getGcpPaymentByOrderId } from '@/modules/gocardless-instant-bank-pay-for-shop/lib/db'
 import * as gc from '@/modules/gocardless-instant-bank-pay-for-shop/lib/gocardless'
@@ -26,7 +27,7 @@ const CACHE_TTL_MS = 5 * 60 * 1000
 const cache = new Map<string, { at: number; institutions: gc.GcInstitution[] }>()
 
 export async function GET(request: NextRequest) {
-  const ip = getClientIpFromRequest(request)
+  const ip = await getClientIp()
   if (!checkInMemoryRateLimit(`gcp-institutions:${ip}`, 30, 15 * 60 * 1000)) {
     return NextResponse.json({ error: 'Too many attempts, please try again in a little while.' }, { status: 429 })
   }
