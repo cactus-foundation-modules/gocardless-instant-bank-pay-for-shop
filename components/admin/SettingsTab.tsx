@@ -7,6 +7,7 @@
 // (declared via requiredEnvVars); the on/off toggle and payment description are
 // this module's own settings.
 import { useEffect, useState } from 'react'
+import { SettingsHeaderActions, SettingsHeaderStatus } from '@/components/admin/SettingsHeaderActions'
 
 const ENV_KEYS = [
   { key: 'GOCARDLESS_ACCESS_TOKEN', label: 'Access token', placeholder: 'sandbox_… / live_…', secret: true },
@@ -127,7 +128,7 @@ export function GoCardlessSettingsTab() {
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
+    <div className="settings-cols">
       <div className="card">
         <h2 className="card-title">Instant Bank Pay</h2>
         <p style={{ color: 'var(--color-text-secondary)', fontSize: 'var(--text-sm)', margin: '0 0 var(--space-4)' }}>
@@ -207,9 +208,12 @@ export function GoCardlessSettingsTab() {
               </div>
             ))}
 
-            <button className="btn btn-primary" disabled={savingConn} onClick={saveConnection}>
-              {savingConn ? 'Saving…' : 'Save connection'}
-            </button>
+            <SettingsHeaderActions>
+              <SettingsHeaderStatus message={savedConn ? 'Saved. Live from the next deployment.' : null} error={connError} />
+              <button className="btn btn-primary" disabled={savingConn} onClick={saveConnection}>
+                {savingConn ? 'Saving…' : 'Save connection'}
+              </button>
+            </SettingsHeaderActions>
           </>
         )}
 
