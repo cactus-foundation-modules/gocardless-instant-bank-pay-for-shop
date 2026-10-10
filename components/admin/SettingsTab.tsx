@@ -217,7 +217,7 @@ export function GoCardlessSettingsTab() {
           </>
         )}
 
-        <div className="field" style={{ marginTop: 'var(--space-4)' }}>
+        <div className="field field--wide" style={{ marginTop: 'var(--space-4)' }}>
           <label htmlFor="gcp-webhook-url">Webhook URL</label>
           <p style={{ color: 'var(--color-text-secondary)', fontSize: 'var(--text-sm)', margin: '0 0 var(--space-2)' }}>
             Add this as a webhook endpoint in your GoCardless dashboard so payments are confirmed
@@ -319,7 +319,7 @@ export function GoCardlessSettingsTab() {
               )}
             </div>
 
-            <div className="field">
+            <div className="field field--wide">
               <label htmlFor="gcp-description">Payment description</label>
               <p style={{ color: 'var(--color-text-secondary)', fontSize: 'var(--text-sm)', margin: '0 0 var(--space-2)' }}>
                 Shown to the shopper when they authorise the payment. The order number is added
